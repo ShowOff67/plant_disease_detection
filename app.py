@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, render_template, jsonify
 import tensorflow as tf
 import numpy as np
 import os
@@ -8,6 +8,10 @@ import json
 app = Flask(__name__)
 UPLOAD_FOLDER = "static/uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+# Create the uploads directory when the app is initialized
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 # ----------------------------
 # Load trained model once
@@ -76,5 +80,4 @@ def about():
 
 
 if __name__ == "__main__":
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     app.run(debug=True)
