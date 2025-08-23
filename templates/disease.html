@@ -15,25 +15,32 @@
   <p>Model is predicting... please wait</p>
 </div>
 
-<div id="preview" style="text-align:center; margin-top:20px;"></div>
 <div id="result" class="result-box" style="display:none; text-align:center; margin-top:20px;"></div>
 
 <script>
 const form = document.getElementById("uploadForm");
 const loading = document.getElementById("loading");
-const preview = document.getElementById("preview");
 const result = document.getElementById("result");
 
 form.addEventListener("submit", function(e){
     e.preventDefault();
-    const formData = new FormData(form);
+    
+    const fileInput = document.querySelector('input[name="file"]');
+    const file = fileInput.files[0];
+
+    const formData = new FormData();
+    formData.append("file", file);
 
     loading.style.display = "block";
     result.style.display = "none";
-    preview.innerHTML = "";
 
     fetch("/predict", { method: "POST", body: formData })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return res.json();
+    })
     .then(data => {
         loading.style.display = "none";
 
@@ -41,16 +48,20 @@ form.addEventListener("submit", function(e){
             result.style.display = "block";
             result.innerHTML = `<p style="color:red;">${data.error}</p>`;
         } else {
-            preview.innerHTML = `<img src="/${data.file_path}" width="300" style="border-radius:10px;">`;
             result.style.display = "block";
             result.innerHTML = `<h4>Prediction:</h4><p>${data.prediction}</p>`;
         }
+    })
+    .catch(error => {
+        loading.style.display = "none";
+        result.style.display = "block";
+        result.innerHTML = `<p style="color:red;">An error occurred: ${error.message}</p>`;
+        console.error('Fetch error:', error);
     });
 });
 
 function clearForm(){
     form.reset();
-    preview.innerHTML = "";
     result.style.display = "none";
 }
 </script>
