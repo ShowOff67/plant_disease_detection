@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width:900px; margin:0 auto; text-align:center;">
+
+  <!-- Project Intro -->
+  <h2 style="margin-bottom:10px;">Plant Disease Detection</h2>
+  <p style="font-size:16px; color:#444;">
+    <p>
+  Hey there!! This is a small ML lab project by <b>Raihan Rahman Samin</b> and <b>Md Nafiul Alam Kibriya</b>.  
+  It’s might not be very accurate, but it gives a quick look at how deep learning can help detect plant diseases.
+  </p>
+  <p>
+    The model is trained on a <a href="https://www.kaggle.com/datasets/vipoooool/new-plant-diseases-dataset">dataset</a> of plant images, and it can recognize various diseases.
+    You can upload an image of a plant leaf, and the model will predict if it has any disease.
+  </p>
+
+  <!-- Accuracy summary -->
+  <h3 style="margin-top:30px;">Model Performance</h3>
+  <p><b>Final Training Accuracy:</b> {{ "%.4f"|format(history['accuracy'][-1]) }}</p>
+  <p><b>Final Validation Accuracy:</b> {{ "%.4f"|format(history['val_accuracy'][-1]) }}</p>
+
+  <!-- Epoch history dropdown -->
+  <h3 style="margin-top:30px;">Training History by Epoch</h3>
+  <label for="epochSelect"><b>Select Epoch:</b></label>
+  <select id="epochSelect" onchange="showDetails(this.value)" style="padding:5px; margin-left:10px;">
+    {% for i in range(history['accuracy']|length) %}
+      <option value="{{ i }}">Epoch {{ i+1 }}</option>
+    {% endfor %}
+  </select>
+
+  <div id="epochDetails" style="margin-top:20px; padding:15px; border:1px solid #ccc; border-radius:8px; background:#f9f9f9;">
+    <p><b>Accuracy:</b> {{ history['accuracy'][0] }}</p>
+    <p><b>Validation Accuracy:</b> {{ history['val_accuracy'][0] }}</p>
+    <p><b>Loss:</b> {{ history['loss'][0] }}</p>
+    <p><b>Validation Loss:</b> {{ history['val_loss'][0] }}</p>
+  </div>
+
+  
+ <div class="img-row" style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+
+  <!-- Accuracy Graph -->
+  <h3 style="margin-top:40px;">Accuracy Curve</h3>
+  <img src="{{ url_for('static', filename='accuracy.png') }}" alt="Accuracy Plot" width="500">
+
+  <!-- Confusion Matrix -->
+  <h3 style="margin-top:40px;">Confusion Matrix</h3>
+  <img src="{{ url_for('static', filename='confusion.png') }}" alt="Confusion Matrix" width="1200">
+
+</div>
+
+</div>
+
+<!-- Script for dropdown -->
+<script>
+  const epochHistory = JSON.parse('{{ history|tojson|safe }}');
+
+  function showDetails(epochIndex) {
+    const detailsDiv = document.getElementById("epochDetails");
+    detailsDiv.innerHTML = `
+      <p><b>Accuracy:</b> ${epochHistory.accuracy[epochIndex]}</p>
+      <p><b>Validation Accuracy:</b> ${epochHistory.val_accuracy[epochIndex]}</p>
+      <p><b>Loss:</b> ${epochHistory.loss[epochIndex]}</p>
+      <p><b>Validation Loss:</b> ${epochHistory.val_loss[epochIndex]}</p>
+    `;
+  }
+</script>
+{% endblock %}
