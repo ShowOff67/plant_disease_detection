@@ -21,20 +21,22 @@
 const form = document.getElementById("uploadForm");
 const loading = document.getElementById("loading");
 const result = document.getElementById("result");
-const fileInput = document.querySelector('input[name="file"]');
 
 form.addEventListener("submit", function(e){
     e.preventDefault();
+
+    // Directly access the file input and its files array
+    const fileInput = document.querySelector('input[name="file"]');
     
-    // Check if a file has been selected
-    if (fileInput.files.length === 0) {
+    // Check if a file was selected. This is the critical part.
+    if (!fileInput.files || fileInput.files.length === 0) {
         alert("Please select a file to upload.");
         return;
     }
 
+    const file = fileInput.files[0];
     const formData = new FormData();
-    // Use .append() to explicitly add the file to the form data
-    formData.append("file", fileInput.files[0]);
+    formData.append("file", file);
 
     loading.style.display = "block";
     result.style.display = "none";
@@ -42,15 +44,12 @@ form.addEventListener("submit", function(e){
     fetch("/predict", { method: "POST", body: formData })
     .then(res => {
         if (!res.ok) {
-            // Throw an error if the HTTP status is not 2xx, which means the backend crashed
             throw new Error(`HTTP error! status: ${res.status}`);
         }
         return res.json();
     })
     .then(data => {
         loading.style.display = "none";
-        
-        // Handle the prediction result or any backend error message
         if(data.error){
             result.style.display = "block";
             result.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
@@ -60,7 +59,6 @@ form.addEventListener("submit", function(e){
         }
     })
     .catch(error => {
-        // Log the error and display it to the user
         loading.style.display = "none";
         result.style.display = "block";
         result.innerHTML = `<p style="color:red;">An error occurred: ${error.message}</p>`;
