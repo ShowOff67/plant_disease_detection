@@ -4,7 +4,8 @@
 <h3 style="text-align:center;">Upload Your Image</h3>
 
 <form id="uploadForm" enctype="multipart/form-data" style="text-align:center; margin-top:20px;">
-    <input type="file" name="file" accept="image/*" required>
+    <!-- Add an id to the file input -->
+    <input type="file" id="fileInput" name="file" accept="image/*" required>
     <br><br>
     <button type="submit">Predict</button>
     <button type="button" onclick="clearForm()">Clear</button>
@@ -15,59 +16,83 @@
   <p>Model is predicting... please wait</p>
 </div>
 
+<!-- Container for the image preview -->
+<div id="preview" style="text-align:center; margin-top:20px;"></div>
+<!-- Container for the prediction result -->
 <div id="result" class="result-box" style="display:none; text-align:center; margin-top:20px;"></div>
 
 <script>
 const form = document.getElementById("uploadForm");
+const fileInput = document.getElementById("fileInput");
 const loading = document.getElementById("loading");
+const preview = document.getElementById("preview");
 const result = document.getElementById("result");
 
+// --- Client-side Image Preview ---
+fileInput.addEventListener("change", function() {
+    const file = this.files[0];
+    if (file) {
+        const reader = new FileReader();
+        preview.innerHTML = ""; // Clear previous preview
+        reader.onload = function(e) {
+            const img = document.createElement("img");
+            img.src = e.target.result;
+            img.style.width = "300px";
+            img.style.borderRadius = "10px";
+            preview.appendChild(img);
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+// --- Form Submission Logic ---
 form.addEventListener("submit", function(e){
     e.preventDefault();
-
-    // Directly access the file input and its files array
-    const fileInput = document.querySelector('input[name="file"]');
     
-    // Check if a file was selected. This is the critical part.
+    // Check if a file is selected
     if (!fileInput.files || fileInput.files.length === 0) {
-        alert("Please select a file to upload.");
+        alert("Please select an image file first.");
         return;
     }
 
-    const file = fileInput.files[0];
-    const formData = new FormData();
-    formData.append("file", file);
+    const formData = new FormData(form);
 
     loading.style.display = "block";
     result.style.display = "none";
+    // The preview is already shown, so we don't need to clear it here
 
     fetch("/predict", { method: "POST", body: formData })
     .then(res => {
         if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
+            // If server returns an error status (e.g., 500), handle it
+            throw new Error(`Server responded with status: ${res.status}`);
         }
         return res.json();
     })
     .then(data => {
         loading.style.display = "none";
+
         if(data.error){
             result.style.display = "block";
-            result.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+            result.innerHTML = `<p style="color:red;">${data.error}</p>`;
         } else {
+            // The preview is already visible, we just show the result
             result.style.display = "block";
             result.innerHTML = `<h4>Prediction:</h4><p>${data.prediction}</p>`;
         }
     })
     .catch(error => {
+        // --- This is crucial for debugging on Render ---
         loading.style.display = "none";
         result.style.display = "block";
-        result.innerHTML = `<p style="color:red;">An error occurred: ${error.message}</p>`;
-        console.error('Fetch error:', error);
+        result.innerHTML = `<p style="color:red;"><b>An error occurred.</b> This could be due to a server timeout or a problem with the model. Please try again. Details: ${error.message}</p>`;
+        console.error("Fetch Error:", error);
     });
 });
 
 function clearForm(){
     form.reset();
+    preview.innerHTML = "";
     result.style.display = "none";
 }
 </script>
