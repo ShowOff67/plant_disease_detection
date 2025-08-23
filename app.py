@@ -10,7 +10,12 @@ app = Flask(__name__)
 # ----------------------------
 # Load trained model once
 # ----------------------------
-model = tf.keras.models.load_model("trained_plant_disease_model.keras")
+# This will happen when the app is first started on Render.
+try:
+    model = tf.keras.models.load_model("trained_plant_disease_model.keras")
+except Exception as e:
+    print(f"Error loading model: {e}")
+    model = None
 
 # Class labels
 class_name = [
@@ -33,6 +38,9 @@ class_name = [
 # Prediction function
 # ----------------------------
 def model_prediction(img_data):
+    if not model:
+        return -1 # Return an error index if the model is not loaded
+
     # Use io.BytesIO to read image data from memory
     image = tf.keras.preprocessing.image.load_img(io.BytesIO(img_data), target_size=(128, 128))
     input_arr = tf.keras.preprocessing.image.img_to_array(image)
@@ -45,8 +53,11 @@ def model_prediction(img_data):
 # ----------------------------
 @app.route("/")
 def home():
-    with open("training_hist.json", "r") as f:
-        history = json.load(f)
+    try:
+        with open("training_hist.json", "r") as f:
+            history = json.load(f)
+    except FileNotFoundError:
+        history = {} # Handle case where training_hist.json might not exist
     return render_template("home.html", history=history)
 
 @app.route("/disease")
@@ -55,11 +66,19 @@ def disease():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    file = request.files["file"]
-    img_data = file.read() # Read file data into memory
-    result_index = model_prediction(img_data)
-    prediction = class_name[result_index]
-    return jsonify({"prediction": prediction})
+    try:
+        file = request.files["file"]
+        img_data = file.read() # Read file data into memory
+        result_index = model_prediction(img_data)
+        
+        if result_index == -1:
+            return jsonify({"error": "Model could not be loaded."}), 500
+
+        prediction = class_name[result_index]
+        return jsonify({"prediction": prediction})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500 # Return a 500 error on any other exception
 
 @app.route("/about")
 def about():

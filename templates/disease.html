@@ -21,15 +21,20 @@
 const form = document.getElementById("uploadForm");
 const loading = document.getElementById("loading");
 const result = document.getElementById("result");
+const fileInput = document.querySelector('input[name="file"]');
 
 form.addEventListener("submit", function(e){
     e.preventDefault();
     
-    const fileInput = document.querySelector('input[name="file"]');
-    const file = fileInput.files[0];
+    // Check if a file has been selected
+    if (fileInput.files.length === 0) {
+        alert("Please select a file to upload.");
+        return;
+    }
 
     const formData = new FormData();
-    formData.append("file", file);
+    // Use .append() to explicitly add the file to the form data
+    formData.append("file", fileInput.files[0]);
 
     loading.style.display = "block";
     result.style.display = "none";
@@ -37,22 +42,25 @@ form.addEventListener("submit", function(e){
     fetch("/predict", { method: "POST", body: formData })
     .then(res => {
         if (!res.ok) {
-            throw new Error('Network response was not ok');
+            // Throw an error if the HTTP status is not 2xx, which means the backend crashed
+            throw new Error(`HTTP error! status: ${res.status}`);
         }
         return res.json();
     })
     .then(data => {
         loading.style.display = "none";
-
+        
+        // Handle the prediction result or any backend error message
         if(data.error){
             result.style.display = "block";
-            result.innerHTML = `<p style="color:red;">${data.error}</p>`;
+            result.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
         } else {
             result.style.display = "block";
             result.innerHTML = `<h4>Prediction:</h4><p>${data.prediction}</p>`;
         }
     })
     .catch(error => {
+        // Log the error and display it to the user
         loading.style.display = "none";
         result.style.display = "block";
         result.innerHTML = `<p style="color:red;">An error occurred: ${error.message}</p>`;
